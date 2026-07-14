@@ -115,6 +115,16 @@ def parse_intent(request_body: Any) -> tuple[str, Any, Any, float]:
     return symbol, qty, side, notional_value
 
 
+def parse_http_request(request_field: Any) -> tuple[str, str]:
+    """Parse 'DELETE /v2/positions HTTP/1.1' into method and path."""
+    if not isinstance(request_field, str) or not request_field.strip():
+        return "N/A", "N/A"
+    parts = request_field.split(" ")
+    if len(parts) >= 2:
+        return parts[0], parts[1]  # method, path
+    return "N/A", "N/A"
+
+
 def normalize_json_for_code(raw: Any) -> str:
     if not isinstance(raw, str) or not raw.strip():
         return "{}"
@@ -166,6 +176,7 @@ def load_data() -> pd.DataFrame:
                         continue
 
                     symbol, qty, side, notional_value = parse_intent(payload.get("request_body", ""))
+                    http_method, http_path = parse_http_request(payload.get("request", ""))
 
                     records.append(
                         {
@@ -192,6 +203,9 @@ def load_data() -> pd.DataFrame:
                             "qty": qty,
                             "side": side,
                             "notional_value": notional_value,
+                            "http_method": http_method,
+                            "http_path": http_path,
+                            "is_http_block": (http_method != "POST" or http_path != "/mcp"),
                         }
                     )
         except OSError:
@@ -213,6 +227,9 @@ def load_data() -> pd.DataFrame:
                 "Region",
                 "Instance_ID",
                 "notional_value",
+                "http_method",
+                "http_path",
+                "is_http_block",
             ]
         )
 
@@ -417,6 +434,17 @@ with tab1:
             )
         else:
             st.info("No 403 guardrail reasons found in selected time window.")
+
+    # Filter for Hop 2 HTTP Blocks
+    http_blocks_df = filtered_df[filtered_df["is_http_block"] == True]
+
+    if not http_blocks_df.empty:
+        st.subheader("🚫 Forbidden HTTP Endpoint Blocks (Hop 2)")
+        st.dataframe(
+            http_blocks_df[["time_local", "http_method", "http_path", "error_detail", "status"]],
+            use_container_width=True,
+            hide_index=True,
+        )
 
 with tab2:
     total_actions = len(filtered_df)
