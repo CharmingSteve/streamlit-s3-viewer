@@ -3,16 +3,27 @@
 set -euo pipefail
 
 # Configuration
-# setting for local laptop agent provost bucket
-#BUCKET_NAME="alpaca-provost-863750994059-us-east-1-an"
-AWS_PROFILE="dassie"
-BUCKET_NAME="ap-logs-863750994059-us-east-1-steve-test-16"
-LOCAL_DIR="./data/logs"
+# Override these at runtime, e.g.:
+# AWS_PROFILE=dassie BUCKET_NAME=ap-logs-... ./sync_logs.sh
+AWS_PROFILE="${AWS_PROFILE:-dassie}"
+BUCKET_NAME="${BUCKET_NAME:-ap-logs-863750994059-us-east-1-steve-test-17}"
+LOCAL_DIR="${LOCAL_DIR:-./data/logs}"
+SYNC_INTERVAL_SECONDS="${SYNC_INTERVAL_SECONDS:-5}"
 
 mkdir -p "$LOCAL_DIR"
 
+if ! command -v aws >/dev/null 2>&1; then
+    echo "ERROR: aws CLI is not installed or not on PATH" >&2
+    exit 1
+fi
+
+echo "Validating AWS profile and bucket access..."
+aws sts get-caller-identity --profile "$AWS_PROFILE" >/dev/null
+aws s3 ls "s3://$BUCKET_NAME/" --profile "$AWS_PROFILE" >/dev/null
+
 echo "Starting continuous sync from s3://$BUCKET_NAME to $LOCAL_DIR..."
 echo "Using AWS Profile: $AWS_PROFILE"
+echo "Sync interval: ${SYNC_INTERVAL_SECONDS}s"
 echo "Press Ctrl+C to stop."
 
 while true; do
@@ -34,5 +45,5 @@ while true; do
         echo "  Sync failed with exit code: $sync_exit_code"
     fi
 
-    sleep 5
+    sleep "$SYNC_INTERVAL_SECONDS"
 done

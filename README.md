@@ -10,11 +10,13 @@ Local Streamlit dashboard for visualizing Agent Provost logs synced from S3.
 
 ## Bucket Configuration
 
-The sync script is configured to pull from:
+The sync script supports runtime overrides (recommended):
 
-- `s3://ap-logs-863750994059-us-east-1-steve-test-16`
+- `BUCKET_NAME` (no `s3://` prefix)
+- `AWS_PROFILE` (defaults to `dassie`)
+- `LOCAL_DIR` (defaults to `./data/logs`)
 
-This is set in [sync_logs.sh](sync_logs.sh).
+Defaults are defined in [sync_logs.sh](sync_logs.sh), but you should pass the bucket explicitly to avoid stale values.
 
 ## Quick Start
 
@@ -29,7 +31,21 @@ Open terminal 1 and start continuous S3 sync:
 
 ```bash
 cd /Users/steve/streamlit-s3-viewer
-./sync_logs.sh
+AWS_PROFILE=dassie BUCKET_NAME=ap-logs-863750994059-us-east-1-steve-test-17 ./sync_logs.sh
+```
+
+If you need to switch buckets, only change `BUCKET_NAME` in the command:
+
+```bash
+cd /Users/steve/streamlit-s3-viewer
+AWS_PROFILE=dassie BUCKET_NAME=<your-bucket-name> ./sync_logs.sh
+```
+
+Example one-shot manual sync (useful for quick verification):
+
+```bash
+cd /Users/steve/streamlit-s3-viewer
+aws s3 sync "s3://<your-bucket-name>/" ./data/logs/ --profile dassie --only-show-errors
 ```
 
 You will see per-cycle output, including downloaded filenames, for example:

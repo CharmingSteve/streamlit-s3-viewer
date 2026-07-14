@@ -112,6 +112,10 @@ def parse_intent(request_body: Any) -> tuple[str, Any, Any, float]:
             # Demo notional estimation for governance analytics.
             notional_value = qty_num * 150 if qty_num > 0 else 0.0
 
+    symbol = str(symbol) if symbol is not None else "N/A"
+    qty = str(qty) if qty is not None else "N/A"
+    side = str(side) if side is not None else "N/A"
+
     return symbol, qty, side, notional_value
 
 
@@ -233,7 +237,7 @@ def load_data() -> pd.DataFrame:
     ]:
         if col not in df.columns:
             df[col] = "N/A"
-        df[col] = df[col].fillna("N/A")
+        df[col] = df[col].fillna("N/A").astype(str)
 
     df["notional_value"] = pd.to_numeric(df["notional_value"], errors="coerce").fillna(0.0)
 
@@ -382,7 +386,7 @@ with tab1:
     else:
         bar_fig = style_plotly(px.bar(title="Blocked Requests Over Time (401 / 403 / 429)"))
 
-    st.plotly_chart(bar_fig, use_container_width=True)
+    st.plotly_chart(bar_fig, width="stretch")
 
     reasons_df = filtered_df[(filtered_df["status"] == "403") & (filtered_df["error_detail"] != "N/A")].copy()
     reasons_df = reasons_df[reasons_df["error_detail"].astype(str).str.strip() != ""]
@@ -406,13 +410,13 @@ with tab1:
         reason_table = None
 
     with donut_col:
-        st.plotly_chart(donut_fig, use_container_width=True)
+        st.plotly_chart(donut_fig, width="stretch")
     with table_col:
         st.markdown("**Guardrail Intervention Reasons**")
         if reason_table is not None and not reason_table.empty:
             st.dataframe(
                 reason_table.rename(columns={"error_detail": "Reason", "count": "Count"}),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
         else:
@@ -444,7 +448,7 @@ with tab2:
         )
         area_fig.update_traces(line_color="#00FF00", fillcolor="rgba(0,255,0,0.25)")
         area_fig = style_plotly(area_fig)
-        st.plotly_chart(area_fig, use_container_width=True)
+        st.plotly_chart(area_fig, width="stretch")
 
         symbol_df = success_df[success_df["symbol"] != "N/A"].copy()
         if not symbol_df.empty:
@@ -459,7 +463,7 @@ with tab2:
                 labels={"symbol": "Symbol", "count": "Trade Count"},
             )
             symbol_fig = style_plotly(symbol_fig)
-            st.plotly_chart(symbol_fig, use_container_width=True)
+            st.plotly_chart(symbol_fig, width="stretch")
         else:
             st.info("No successful symbol-trading records were detected in parsed intents.")
     else:
@@ -488,7 +492,7 @@ with tab3:
     ].copy()
 
     ledger_cols = ["time_local", "status", "provost_user", "symbol", "qty", "error_code", "error_detail"]
-    st.dataframe(forensic_df[ledger_cols], use_container_width=True, height=420)
+    st.dataframe(forensic_df[ledger_cols], width="stretch", height=420)
 
     request_ids = [rid for rid in forensic_df["provost_request_id"].astype(str).unique().tolist() if rid != "N/A"]
     selected_id = st.selectbox("Select provost_request_id", options=["N/A"] + request_ids)
