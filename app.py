@@ -436,7 +436,7 @@ with tab1:
             st.info("No 403 guardrail reasons found in selected time window.")
 
     # Filter for Hop 2 HTTP Blocks
-    http_blocks_df = filtered_df[filtered_df["is_http_block"] == True]
+    http_blocks_df = filtered_df[filtered_df["is_http_block"]]
 
     if not http_blocks_df.empty:
         st.subheader("🚫 Forbidden HTTP Endpoint Blocks (Hop 2)")
